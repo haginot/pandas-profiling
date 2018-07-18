@@ -3,6 +3,9 @@
 """
 import pandas as pd
 
+TYPE_TEXT = 'TEXT'
+"""String: A text variable"""
+
 TYPE_CAT = 'CAT'
 """String: A categorical variable"""
 
@@ -113,7 +116,17 @@ def get_vartype(data):
         elif distinct_count == leng:
             vartype = S_TYPE_UNIQUE
         else:
-            vartype = TYPE_CAT
+            # TODO Type Detection on Other module?
+            data = data.fillna('nan')
+            # count unique word
+            word_num = data.str.split().apply(len)
+            words = set()
+            data.str.lower().str.split().apply(words.update)
+            if word_num.sort_values().unique()[:-1].max() > word_num.mean() + 3.0 * word_num.std() \
+                and len(words)/word_num.sum() > 0.3:
+                vartype = TYPE_TEXT
+            else:
+                vartype = TYPE_CAT
     except:
         vartype = S_TYPE_UNSUPPORTED
 

@@ -81,6 +81,31 @@ def describe_date_1d(series):
     stats['mini_histogram'] = mini_histogram(series)
     return pd.Series(stats, name=series.name)
 
+def describe_text_1d(series):
+    """Compute summary statistics of a categorical (`TYPE_TEXT`) variable (a Series).
+
+    Parameters
+    ----------
+    series : Series
+        The variable to describe.
+
+    Returns
+    -------
+    Series
+        The description of the variable as a Series with index being stats keys.
+    """
+    # Only run if at least 1 non-missing value
+    value_counts, distinct_count = base.get_groupby_statistic(series)
+    top, freq = value_counts.index[0], value_counts.iloc[0]
+    names = []
+    result = []
+
+    if base.get_vartype(series) == base.TYPE_TEXT:
+        names += ['top', 'freq', 'type']
+        result += [top, freq, base.TYPE_TEXT]
+
+    return pd.Series(result, index=names, name=series.name)
+
 def describe_categorical_1d(series):
     """Compute summary statistics of a categorical (`TYPE_CAT`) variable (a Series).
 
@@ -272,6 +297,8 @@ def describe_1d(data, **kwargs):
             result = result.append(describe_date_1d(data, **kwargs))
         elif vartype == base.S_TYPE_UNIQUE:
             result = result.append(describe_unique_1d(data, **kwargs))
+        elif vartype == base.TYPE_TEXT:
+            result = result.append(describe_text_1d(data))
         else:
             # TYPE_CAT
             result = result.append(describe_categorical_1d(data))
@@ -409,7 +436,7 @@ def describe(df, bins=10, check_correlation=True, correlation_threshold=0.9, cor
     table_stats['memsize'] = formatters.fmt_bytesize(memsize)
     table_stats['recordsize'] = formatters.fmt_bytesize(memsize / table_stats['n'])
 
-    table_stats.update({k: 0 for k in ("NUM", "DATE", "CONST", "CAT", "UNIQUE", "CORR", "RECODED", "BOOL", "UNSUPPORTED")})
+    table_stats.update({k: 0 for k in ("NUM", "DATE", "CONST", "TEXT", "CAT", "UNIQUE", "CORR", "RECODED", "BOOL", "UNSUPPORTED")})
     table_stats.update(dict(variable_stats.loc['type'].value_counts()))
     table_stats['REJECTED'] = table_stats['CONST'] + table_stats['CORR'] + table_stats['RECODED']
 
